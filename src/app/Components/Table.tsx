@@ -30,7 +30,11 @@ export default function Table({
               // Maps starting from the first row in the matrix
               (_, i) => (
                 // Iterates over its elements, ignores the values
-                <th key={i} className="py-2 px-4 border border-gray-300">
+                <th
+                  key={i}
+                  className="py-2 px-4 border border-gray-300"
+                  contentEditable={true}
+                >
                   Factor {i + 1}
                   {/* Creates as many column heads as there are elements (factors) in the matrix */}
                 </th>
