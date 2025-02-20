@@ -3,8 +3,8 @@ import Form from "./Form";
 
 export default function Body() {
   return (
-    <div className="px-4 py-5 sm:p-6">
-      <h1 className="text-2x1 font-semibold text-gray-900 mb-6">
+    <div className="p-6 space-y 8">
+      <h1 className="text-3x1 font-bold text-gray-800 mb-6">
         Experiment Design Tool
       </h1>
       <Form />
