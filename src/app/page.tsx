@@ -1,6 +1,7 @@
 "use client";
 
 import Form from "./Components/Form";
+import Table from "./Components/Table";
 import fastCartesian from "fast-cartesian";
 import { useState } from "react";
 
@@ -19,42 +20,6 @@ import { useState } from "react";
 
 // defining types of arguments
 // and saying we are expecting a numeric array of arrays as a return
-function generateDesignMatrix(
-  factors: number,
-  levels: number[],
-  halfFactorial: boolean
-): number[][] {
-  // Check if the criteria are met
-  if (levels.length > 3 || factors > 6 || factors * levels.length > 15) {
-    throw new Error(
-      "Error: Exceeds the limit of 3 levels, 6 factors, and 15 repeats."
-    );
-  }
-  let arrays;
-
-  if (halfFactorial) {
-    // Create an array with factors - 1 number of elements, each being the 'levels' array
-    arrays = Array(factors - 1).fill(levels);
-  } else {
-    // Create an array with factors number of elements, each being the 'levels' array
-    arrays = Array(factors).fill(levels);
-  }
-
-  // Use fastCartesian package to generate all possible combinations
-  // a bunch of typescript jargon needed to define the type of the matrix
-  let matrix: number[][] = fastCartesian(arrays) as number[][];
-
-  if (halfFactorial) {
-    // Add the final column to the matrix
-    matrix = matrix.map((row: number[]) => [
-      ...row,
-      row.reduce((acc, cur) => acc * cur, 1),
-    ]);
-  }
-
-  // returns a numerical array of arrays
-  console.log(matrix);
-}
 
 export default function Home() {
   // Defining state variables for all function parameters
@@ -62,6 +27,47 @@ export default function Home() {
   const [booleanValue, setBooleanValue] = useState(false);
   // State variable for converting level input to an array
   const [levels, setLevels] = useState<number[]>([]);
+
+  // update matrix state
+  const [matrix, setMatrix] = useState<number[][]>([]);
+
+  function generateDesignMatrix(
+    factors: number,
+    levels: number[],
+    halfFactorial: boolean
+  ): number[][] {
+    // Check if the criteria are met
+    if (levels.length > 3 || factors > 6 || factors * levels.length > 15) {
+      throw new Error(
+        "Error: Exceeds the limit of 3 levels, 6 factors, and 15 repeats."
+      );
+    }
+    let arrays;
+
+    if (halfFactorial) {
+      // Create an array with factors - 1 number of elements, each being the 'levels' array
+      arrays = Array(factors - 1).fill(levels);
+    } else {
+      // Create an array with factors number of elements, each being the 'levels' array
+      arrays = Array(factors).fill(levels);
+    }
+
+    // Use fastCartesian package to generate all possible combinations
+    // a bunch of typescript jargon needed to define the type of the matrix
+    let matrix: number[][] = fastCartesian(arrays) as number[][];
+
+    if (halfFactorial) {
+      // Add the final column to the matrix
+      matrix = matrix.map((row: number[]) => [
+        ...row,
+        row.reduce((acc, cur) => acc * cur, 1),
+      ]);
+    }
+
+    // returns a numerical array of arrays
+    setMatrix(matrix);
+    return matrix;
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -80,6 +86,7 @@ export default function Home() {
           generateDesignMatrix={generateDesignMatrix}
         />
       </div>
+      <Table matrix={matrix} />
     </main>
   );
 }
