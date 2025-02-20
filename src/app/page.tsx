@@ -3,7 +3,7 @@
 import Form from "./Components/Form";
 import Table from "./Components/Table";
 import fastCartesian from "fast-cartesian";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // 1. Create a function named `generateDesignMatrix` that takes in three parameters: `factors`, `levels`, and `halfFactorial`. The function should return an array of arrays.
 // 2. The `factors` parameter is an integer that represents the number of factors in the design matrix.
@@ -18,9 +18,6 @@ import { useState } from "react";
   halfFactorial: boolean;
 } */
 
-// defining types of arguments
-// and saying we are expecting a numeric array of arrays as a return
-
 export default function Home() {
   // Defining state variables for all function parameters
   const [integerValue, setIntegerValue] = useState<number>(0);
@@ -31,6 +28,25 @@ export default function Home() {
   // update matrix state
   const [matrix, setMatrix] = useState<number[][]>([]);
 
+  /* ATTEMPTING TO INTRODUCE CUSTOM LEVEL NAMING UPDATEABLE FROM TABLE COMPONENT */
+  // mapping state for renaming levels
+  // passing these to Table component
+  const [levelMapping, setLevelMapping] = useState<{ [key: number]: string }>(
+    Object.fromEntries(levels.map((level) => [level, level.toString()]))
+  );
+
+  // useEffect to update levelMapping when levels change
+  // without this, levelMapping state would not update when levels change
+  // meaning levelMapping object would not contain the correct keys
+  // and hence not render any input fields in table.tsx
+  useEffect(() => {
+    setLevelMapping(
+      Object.fromEntries(levels.map((level) => [level, level.toString()]))
+    );
+  }, [levels]);
+
+  // defining types of arguments
+  // and saying we are expecting a numeric array of arrays as a return
   function generateDesignMatrix(
     factors: number,
     levels: number[],
@@ -86,7 +102,11 @@ export default function Home() {
           generateDesignMatrix={generateDesignMatrix}
         />
       </div>
-      <Table matrix={matrix} />
+      <Table
+        matrix={matrix}
+        levelMapping={levelMapping}
+        setLevelMapping={setLevelMapping}
+      />
     </main>
   );
 }
