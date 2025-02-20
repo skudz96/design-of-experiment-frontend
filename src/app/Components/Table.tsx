@@ -18,8 +18,37 @@ export default function Table({
     setLevelMapping({ ...levelMapping, [level]: name });
   }
 
+  // function that converts the matrix data into csv format
+  // creates the CSV by joining the headers and rows with commas and newlines
+  // creates blob object from the CSV content and a temporary link element to trigger the download
+  function exportToCSV() {
+    const headers = [
+      "Experiment",
+      ...matrix[0].map((_, i) => `Factor ${i + 1}`),
+    ];
+    const rows = matrix.map((row, rowIndex) => [
+      rowIndex + 1,
+      ...row.map((cell) => levelMapping[cell] || cell),
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "design_matrix.csv");
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   return (
-    <div>
+    <div className="flex flex-col items-center justify-center">
       <table className="min-w-full bg-white border border-gray-300">
         <thead>
           {/* Table header start */}
@@ -103,6 +132,13 @@ export default function Table({
           ))}
         </div>
       </form>
+      {/* Button that executes csv exports function on click */}
+      <button
+        onClick={exportToCSV}
+        className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-300"
+      >
+        Export to CSV
+      </button>
     </div>
   );
 }
