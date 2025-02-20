@@ -2,14 +2,32 @@
 
 import { useState } from "react";
 
-export default function Form() {
-  // Defining state variables for all function parameters
-  const [integerValue, setIntegerValue] = useState("");
-  const [arrayValue, setArrayValue] = useState("");
-  const [booleanValue, setBooleanValue] = useState(false);
+// Defining types for the props coming from the parent component
+// This is a good practice to ensure that the props are of the correct type
+interface FormProps {
+  factor: number;
+  setFactors: (value: number) => void;
+  levels: number[];
+  setLevels: (value: number[]) => void;
+  halfFactorial: boolean;
+  setHalfFactorial: (value: boolean) => void;
+  generateDesignMatrix: (
+    factors: number,
+    levels: number[],
+    halfFactorial: boolean
+  ) => number[][];
+}
 
-  // State variable for converting level input to an array
-  const [levels, setLevels] = useState<number[]>([]);
+export default function Form({
+  factor,
+  setFactors,
+  levels,
+  setLevels,
+  halfFactorial,
+  setHalfFactorial,
+  generateDesignMatrix,
+}: FormProps) {
+  const [arrayValue, setArrayValue] = useState("");
 
   // Event handler for input change
   // Basically splits the comma separated values into an array, which matrix function expects
@@ -23,9 +41,13 @@ export default function Form() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle form submission logic here
-    console.log("Number of factors: ", integerValue);
+    // Testing to see form logs arguments in correct format, remove if not needed
+    console.log("Number of factors: ", factor);
     console.log("Number of levels: ", levels);
-    console.log("Half-factorial: ", booleanValue);
+    console.log("Half-factorial: ", halfFactorial);
+
+    // Executing the function passed from the parent component with the formatted arguments, generates the matrix in the console
+    generateDesignMatrix(factor, levels, halfFactorial);
   };
 
   return (
@@ -45,8 +67,8 @@ export default function Form() {
         <input // Variable for the number of factors, strictly integer
           id="integer"
           type="number"
-          value={integerValue} // value it set to the state variable integerValue
-          onChange={(e) => setIntegerValue(e.target.value)} // state variable updated when user types
+          value={factor} // value it set to the passed state variable from parent component
+          onChange={(e) => setFactors(Number(e.target.value))} // state variable updated when user types
           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
           placeholder="Enter number of variables"
         />
@@ -81,14 +103,14 @@ export default function Form() {
             type="checkbox"
             name="boolean"
             id="boolean"
-            checked={booleanValue}
-            onChange={(e) => setBooleanValue(e.target.checked)}
+            checked={halfFactorial}
+            onChange={(e) => setHalfFactorial(e.target.checked)}
             className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
           />
           <label
             htmlFor="boolean"
             className={`toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer ${
-              booleanValue ? "bg-blue-500" : ""
+              halfFactorial ? "bg-blue-500" : ""
             }`}
           ></label>
         </div>
