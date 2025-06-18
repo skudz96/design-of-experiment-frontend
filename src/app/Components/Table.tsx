@@ -219,10 +219,7 @@ export default function Table({
         </h3>
         {/* Grid layout that creates columns for each factor */}
         <div
-          className="grid gap-6 overflow-x-auto"
-          style={{
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          }}
+          className="grid gap-6 w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
         >
           {headerNames.map((headerName, columnIndex) => (
             // Creates a section for each column/factor
