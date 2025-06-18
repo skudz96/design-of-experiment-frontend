@@ -15,7 +15,7 @@ The tool helps you quickly build experimental matrices when planning a design of
    ```
 3. Open `http://localhost:3000` in your browser.
 
-Alternatively, use [this] (https://design-of-experiment-frontend.vercel.app/) deployment link.
+Alternatively, use [this](https://design-of-experiment-frontend.vercel.app/) deployment link.
 
 ## Using the interface
 
