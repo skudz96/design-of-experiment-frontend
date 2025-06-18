@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface TableProps {
   matrix: number[][];
-  levelMapping: { [key: number]: string };
-  setLevelMapping: (mapping: { [key: number]: string }) => void;
+  levelMapping: { [columnIndex: number]: { [level: number]: string } };
+  setLevelMapping: (mapping: {
+    [columnIndex: number]: { [level: number]: string };
+  }) => void;
 }
 
 export default function Table({
@@ -23,13 +25,52 @@ export default function Table({
     }
   }, [matrix]);
 
+  // Initialize level mapping if empty or matrix structure changes
+  useEffect(() => {
+    if (!matrix || matrix.length === 0) return;
+
+    // Check if levelMapping is empty or doesn't match current matrix structure
+    const needsInitialization = matrix[0].some(
+      (_, columnIndex) =>
+        !levelMapping[columnIndex] ||
+        typeof levelMapping[columnIndex] !== "object"
+    );
+
+    if (needsInitialization) {
+      const newMapping: { [columnIndex: number]: { [level: number]: string } } =
+        {};
+
+      // Initialize mapping for each column in the matrix
+      matrix[0].forEach((_, columnIndex) => {
+        // Ensure each column has its own mapping object
+        newMapping[columnIndex] = {};
+
+        // Get unique levels for this specific column by checking all rows
+        const uniqueLevels = [
+          ...new Set(matrix.map((row) => row[columnIndex])),
+        ];
+
+        // Create default mapping for each unique level in this column
+        uniqueLevels.forEach((level) => {
+          // If existing mapping exists and is valid, preserve it, otherwise use default
+          if (
+            levelMapping[columnIndex] &&
+            typeof levelMapping[columnIndex] === "object" &&
+            levelMapping[columnIndex][level]
+          ) {
+            newMapping[columnIndex][level] = levelMapping[columnIndex][level];
+          } else {
+            newMapping[columnIndex][level] = level.toString();
+          }
+        });
+      });
+
+      setLevelMapping(newMapping);
+    }
+  }, [matrix, levelMapping, setLevelMapping]);
+
   if (!matrix || matrix.length === 0) {
     return null;
-  }
-
-  // function to update the levelMapping state, renaming the levels
-  function handleLevelNameChange(level: number, name: string) {
-    setLevelMapping({ ...levelMapping, [level]: name });
   }
 
   // function to update header names
@@ -39,17 +80,30 @@ export default function Table({
     setHeaderNames(newHeaderNames);
   }
 
+  // function to update the levelMapping state for specific column and level
+  function handleColumnLevelNameChange(
+    columnIndex: number,
+    level: number,
+    name: string
+  ) {
+    const newMapping = {
+      ...levelMapping,
+      [columnIndex]: {
+        ...levelMapping[columnIndex],
+        [level]: name,
+      },
+    };
+    setLevelMapping(newMapping);
+  }
+
   // function that converts the matrix data into csv format
-  // creates the CSV by joining the headers and rows with commas and newlines
-  // creates blob object from the CSV content and a temporary link element to trigger the download
   function exportToCSV() {
-    const headers = [
-      "Experiment",
-      ...headerNames, // Use the editable header names
-    ];
+    const headers = ["Experiment", ...headerNames];
     const rows = matrix.map((row, rowIndex) => [
       rowIndex + 1,
-      ...row.map((cell) => levelMapping[cell] || cell),
+      ...row.map(
+        (cell, columnIndex) => levelMapping[columnIndex]?.[cell] || cell
+      ),
     ]);
 
     const csvContent = [
@@ -72,9 +126,7 @@ export default function Table({
     <div className="flex flex-col items-center justify-center">
       <table className="min-w-full bg-white border border-gray-300">
         <thead>
-          {/* Table header start */}
           <tr>
-            {/* First column header for experiment numbering */}
             <th className="py-2 px-4 border border-gray-300">Experiment</th>
             {headerNames.map((headerName, i) => (
               <th key={i} className="py-2 px-4 border border-gray-300">
@@ -89,71 +141,82 @@ export default function Table({
             ))}
           </tr>
         </thead>
-        {/* Table header end */}
         <tbody>
-          {/* Table body start */}
-          {matrix.map(
-            // Iterates over each row (array) in the matrix
-            (row, rowIndex) => (
-              // Creates a table row for each array
-              <tr key={rowIndex}>
-                <td className="py-2 px-4 border border-gray-300 text-center font-bold">
-                  {rowIndex + 1}
+          {matrix.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              <td className="py-2 px-4 border border-gray-300 text-center font-bold">
+                {rowIndex + 1}
+              </td>
+              {row.map((cell, cellIndex) => (
+                <td
+                  key={cellIndex}
+                  className="py-2 px-4 border border-gray-300 text-center"
+                >
+                  {levelMapping[cellIndex]?.[cell] || cell}
                 </td>
-                {row.map((cell, cellIndex) => (
-                  // Iterates over the contents of each row (array) in the matrix
-                  // Creates a data cell for each one
-                  // populates the cell with the content
-                  <td
-                    key={cellIndex}
-                    className="py-2 px-4 border border-gray-300 text-center"
-                  >
-                    {levelMapping[cell] || cell}
-                    {/* If the levelMapping object has a key that matches the cell value, it uses the value of that key as the cell content */}
-                  </td>
-                ))}
-              </tr>
-            )
-          )}
+              ))}
+            </tr>
+          ))}
         </tbody>
-        {/* Table body end */}
       </table>
 
-      <form className="mt-4">
-        <div className="flex flex-wrap gap-4">
-          {/* form element that generates input fields based on number of levels */}
-          {Object.keys(levelMapping).map((level) => (
-            // Returns an array of the keys of the levelMapping object
-            // each key represents a level in the matrix
-            // maps over each level and creates an input field for it
-            // the input field is pre-populated with the value of the key
-
-            // useEffect hook in page.tsx updates the levelMapping object when the levels array changes
-            <div key={level} className="flex items-center space-x-2">
-              <label
-                htmlFor={`level-${level}`}
-                className="text-sm font-medium text-gray-700"
-              >
-                Level {level}
-              </label>
-              <input
-                id={`level-${level}`}
-                type="text"
-                value={levelMapping[Number(level)]}
-                onChange={(e) =>
-                  handleLevelNameChange(Number(level), e.target.value)
-                }
-                className="w-24 px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
-                placeholder={`Enter name for level ${level}`}
-              />
+      <div className="mt-6 w-full max-w-6xl">
+        <h3 className="text-lg font-semibold mb-4 text-center">
+          Customize Level Names by Column
+        </h3>
+        {/* Grid layout that creates columns for each factor */}
+        <div
+          className="grid gap-6"
+          style={{ gridTemplateColumns: `repeat(${headerNames.length}, 1fr)` }}
+        >
+          {headerNames.map((headerName, columnIndex) => (
+            // Creates a section for each column/factor
+            <div
+              key={columnIndex}
+              className="border border-gray-200 rounded-lg p-4"
+            >
+              <h4 className="font-medium text-gray-800 mb-3 text-center">
+                {headerName}
+              </h4>
+              <div className="space-y-2">
+                {/* Maps over the levels in each column to create input fields */}
+                {levelMapping[columnIndex] &&
+                  Object.entries(levelMapping[columnIndex]).map(
+                    ([level, name]) => (
+                      <div key={level} className="flex items-center space-x-2">
+                        <label
+                          htmlFor={`level-${columnIndex}-${level}`}
+                          className="text-sm font-medium text-gray-600 w-16 flex-shrink-0"
+                        >
+                          Level {level}:
+                        </label>
+                        {/* Input field for customizing level names for this specific column */}
+                        <input
+                          id={`level-${columnIndex}-${level}`}
+                          type="text"
+                          value={name}
+                          onChange={(e) =>
+                            handleColumnLevelNameChange(
+                              columnIndex,
+                              Number(level),
+                              e.target.value
+                            )
+                          }
+                          className="flex-1 px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                          placeholder={`Name for level ${level}`}
+                        />
+                      </div>
+                    )
+                  )}
+              </div>
             </div>
           ))}
         </div>
-      </form>
-      {/* Button that executes csv exports function on click */}
+      </div>
+
       <button
         onClick={exportToCSV}
-        className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-300"
+        className="mt-6 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-300"
       >
         Export to CSV
       </button>
