@@ -24,6 +24,7 @@ Alternatively, use [this](https://design-of-experiment-frontend.vercel.app/) dep
 3. **Half-factorial** – Toggle this option if you want the last column to be a product of the others (creating a half factorial design).
 4. Press **Submit** to generate the matrix.
 5. Each column header and level name can be edited directly in the table to give them meaningful labels.
-6. Click **Export to CSV** to download the matrix for further analysis.
+6. Press **Randomize Row Order** to shuffle row orders. **Restore Original Order** to revert.
+7. Click **Export to CSV** to download the matrix for further analysis.
 
 The generation function restricts designs to a maximum of 3 levels and 6 factors so the total number of runs does not exceed 15.
