@@ -16,6 +16,10 @@ export default function Table({
     () => matrix[0]?.map((_, i) => `Factor ${i + 1}`) || []
   );
 
+  // State to store the shuffled matrix and track if it's randomized
+  const [displayMatrix, setDisplayMatrix] = useState<number[][]>(matrix);
+  const [isRandomized, setIsRandomized] = useState<boolean>(false);
+
   // Internal state for column-specific level mapping
   // This converts the flat levelMapping to column-specific format
   const [columnLevelMapping, setColumnLevelMapping] = useState<{
@@ -45,6 +49,12 @@ export default function Table({
     if (matrix[0]) {
       setHeaderNames(matrix[0].map((_, i) => `Factor ${i + 1}`));
     }
+  }, [matrix]);
+
+  // Update display matrix when original matrix changes
+  useEffect(() => {
+    setDisplayMatrix(matrix);
+    setIsRandomized(false); // Reset randomization state when matrix changes
   }, [matrix]);
 
   // Update column mappings when matrix or levelMapping changes
@@ -121,6 +131,31 @@ export default function Table({
     });
   }
 
+  // function to randomize the order of matrix rows
+  // Creates a copy of the matrix and shuffles the rows using Fisher-Yates algorithm
+  function randomizeRowOrder() {
+    const shuffledMatrix = [...displayMatrix];
+
+    // Fisher-Yates shuffle algorithm to randomize array order
+    for (let i = shuffledMatrix.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledMatrix[i], shuffledMatrix[j]] = [
+        shuffledMatrix[j],
+        shuffledMatrix[i],
+      ];
+    }
+
+    setDisplayMatrix(shuffledMatrix);
+    setIsRandomized(true);
+  }
+
+  // function to restore the original Yates order of the matrix
+  // Resets the display matrix to the original matrix order
+  function restoreOriginalOrder() {
+    setDisplayMatrix(matrix);
+    setIsRandomized(false);
+  }
+
   // function that converts the matrix data into csv format
   // creates the CSV by joining the headers and rows with commas and newlines
   // creates blob object from the CSV content and a temporary link element to trigger the download
@@ -129,7 +164,7 @@ export default function Table({
       "Experiment",
       ...headerNames, // Use the editable header names
     ];
-    const rows = matrix.map((row, rowIndex) => [
+    const rows = displayMatrix.map((row, rowIndex) => [
       rowIndex + 1,
       ...row.map(
         (cell, columnIndex) => columnLevelMapping[columnIndex]?.[cell] || cell
@@ -181,8 +216,8 @@ export default function Table({
           {/* Table header end */}
           <tbody>
             {/* Table body start */}
-            {matrix.map(
-              // Iterates over each row (array) in the matrix
+            {displayMatrix.map(
+              // Iterates over each row (array) in the display matrix (which may be shuffled)
               (row, rowIndex) => (
                 // Creates a table row for each array
                 <tr
@@ -218,7 +253,7 @@ export default function Table({
           Customize Level Names by Column
         </h3>
         {/* Grid layout that creates columns for each factor */}
-        <div className="grid gap-6 w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid gap-6 w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 justify-items-center">
           {headerNames.map((headerName, columnIndex) => (
             // Creates a section for each column/factor
             <div
@@ -267,13 +302,34 @@ export default function Table({
         </div>
       </div>
 
-      {/* Button that executes csv exports function on click */}
-      <button
-        onClick={exportToCSV}
-        className="mt-6 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-300"
-      >
-        Export to CSV
-      </button>
+      {/* Container for action buttons */}
+      <div className="mt-6 flex gap-4">
+        {/* Button to randomize the order of experiment rows */}
+        <button
+          onClick={randomizeRowOrder}
+          className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-300"
+        >
+          Randomize Row Order
+        </button>
+
+        {/* Button to restore original Yates order - only shown when randomized */}
+        {isRandomized && (
+          <button
+            onClick={restoreOriginalOrder}
+            className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-300"
+          >
+            Restore Original Order
+          </button>
+        )}
+
+        {/* Button that executes csv exports function on click */}
+        <button
+          onClick={exportToCSV}
+          className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-300"
+        >
+          Export to CSV
+        </button>
+      </div>
     </div>
   );
 }
