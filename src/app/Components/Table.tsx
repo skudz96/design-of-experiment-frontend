@@ -153,16 +153,17 @@ export default function Table({
   }
 
   return (
-    <div className="flex flex-col items-center justify-center">
-      <table className="min-w-full bg-white border border-gray-300">
+    <div className="flex flex-col items-center justify-center w-full">
+      <div className="overflow-x-auto w-full">
+      <table className="min-w-full bg-white border border-gray-300 rounded-md shadow-sm text-sm">
         <thead>
           {/* Table header start */}
           <tr>
             {/* First column header for experiment numbering */}
-            <th className="py-2 px-4 border border-gray-300">Experiment</th>
+            <th className="p-2 border border-gray-300">Experiment</th>
             {headerNames.map((headerName, i) => (
               // Maps over header names to create editable column headers
-              <th key={i} className="py-2 px-4 border border-gray-300">
+              <th key={i} className="p-2 border border-gray-300">
                 <input
                   type="text"
                   value={headerName}
@@ -183,7 +184,7 @@ export default function Table({
             (row, rowIndex) => (
               // Creates a table row for each array
               <tr key={rowIndex}>
-                <td className="py-2 px-4 border border-gray-300 text-center font-bold">
+                <td className="p-2 border border-gray-300 text-center font-bold">
                   {rowIndex + 1}
                 </td>
                 {row.map((cell, cellIndex) => (
@@ -192,7 +193,7 @@ export default function Table({
                   // populates the cell with the content
                   <td
                     key={cellIndex}
-                    className="py-2 px-4 border border-gray-300 text-center"
+                    className="p-2 border border-gray-300 text-center"
                   >
                     {columnLevelMapping[cellIndex]?.[cell] || cell}
                     {/* Uses column-specific levelMapping to display custom names for levels */}
@@ -205,6 +206,7 @@ export default function Table({
         </tbody>
         {/* Table body end */}
       </table>
+      </div>
 
       <div className="mt-6 w-full max-w-6xl">
         <h3 className="text-lg font-semibold mb-4 text-center">
@@ -213,7 +215,7 @@ export default function Table({
         {/* Grid layout that creates columns for each factor */}
         <div
           className="grid gap-6"
-          style={{ gridTemplateColumns: `repeat(${headerNames.length}, 1fr)` }}
+          style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}
         >
           {headerNames.map((headerName, columnIndex) => (
             // Creates a section for each column/factor
