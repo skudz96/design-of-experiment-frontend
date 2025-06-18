@@ -155,57 +155,62 @@ export default function Table({
   return (
     <div className="flex flex-col items-center justify-center w-full">
       <div className="overflow-x-auto w-full">
-      <table className="min-w-full bg-white border border-gray-300 rounded-md shadow-sm text-sm">
-        <thead>
-          {/* Table header start */}
-          <tr>
-            {/* First column header for experiment numbering */}
-            <th className="p-2 border border-gray-300">Experiment</th>
-            {headerNames.map((headerName, i) => (
-              // Maps over header names to create editable column headers
-              <th key={i} className="p-2 border border-gray-300">
-                <input
-                  type="text"
-                  value={headerName}
-                  onChange={(e) => handleHeaderNameChange(i, e.target.value)}
-                  className="w-full bg-transparent border-none outline-none text-center font-semibold"
-                  placeholder={`Factor ${i + 1}`}
-                />
-                {/* Creates editable header inputs for each factor */}
+        <table className="min-w-full bg-white border border-gray-300 rounded-md shadow-md text-sm">
+          <thead>
+            {/* Table header start */}
+            <tr>
+              {/* First column header for experiment numbering */}
+              <th className="p-2 border border-gray-300 bg-slate-100">
+                Experiment
               </th>
-            ))}
-          </tr>
-        </thead>
-        {/* Table header end */}
-        <tbody>
-          {/* Table body start */}
-          {matrix.map(
-            // Iterates over each row (array) in the matrix
-            (row, rowIndex) => (
-              // Creates a table row for each array
-              <tr key={rowIndex}>
-                <td className="p-2 border border-gray-300 text-center font-bold">
-                  {rowIndex + 1}
-                </td>
-                {row.map((cell, cellIndex) => (
-                  // Iterates over the contents of each row (array) in the matrix
-                  // Creates a data cell for each one
-                  // populates the cell with the content
-                  <td
-                    key={cellIndex}
-                    className="p-2 border border-gray-300 text-center"
-                  >
-                    {columnLevelMapping[cellIndex]?.[cell] || cell}
-                    {/* Uses column-specific levelMapping to display custom names for levels */}
-                    {/* If no custom name exists for this column and level, shows the original cell value */}
+              {headerNames.map((headerName, i) => (
+                // Maps over header names to create editable column headers
+                <th key={i} className="p-2 border border-gray-300 bg-slate-100">
+                  <input
+                    type="text"
+                    value={headerName}
+                    onChange={(e) => handleHeaderNameChange(i, e.target.value)}
+                    className="w-full bg-transparent border-none outline-none text-center font-semibold"
+                    placeholder={`Factor ${i + 1}`}
+                  />
+                  {/* Creates editable header inputs for each factor */}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          {/* Table header end */}
+          <tbody>
+            {/* Table body start */}
+            {matrix.map(
+              // Iterates over each row (array) in the matrix
+              (row, rowIndex) => (
+                // Creates a table row for each array
+                <tr
+                  key={rowIndex}
+                  className={rowIndex % 2 === 0 ? "bg-slate-50" : "bg-white"}
+                >
+                  <td className="p-2 border border-gray-300 text-center font-bold">
+                    {rowIndex + 1}
                   </td>
-                ))}
-              </tr>
-            )
-          )}
-        </tbody>
-        {/* Table body end */}
-      </table>
+                  {row.map((cell, cellIndex) => (
+                    // Iterates over the contents of each row (array) in the matrix
+                    // Creates a data cell for each one
+                    // populates the cell with the content
+                    <td
+                      key={cellIndex}
+                      className="p-2 border border-gray-300 text-center"
+                    >
+                      {columnLevelMapping[cellIndex]?.[cell] || cell}
+                      {/* Uses column-specific levelMapping to display custom names for levels */}
+                      {/* If no custom name exists for this column and level, shows the original cell value */}
+                    </td>
+                  ))}
+                </tr>
+              )
+            )}
+          </tbody>
+          {/* Table body end */}
+        </table>
       </div>
 
       <div className="mt-6 w-full max-w-6xl">
@@ -214,14 +219,16 @@ export default function Table({
         </h3>
         {/* Grid layout that creates columns for each factor */}
         <div
-          className="grid gap-6"
-          style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}
+          className="grid gap-6 overflow-x-auto"
+          style={{
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          }}
         >
           {headerNames.map((headerName, columnIndex) => (
             // Creates a section for each column/factor
             <div
               key={columnIndex}
-              className="border border-gray-200 rounded-lg p-4"
+              className="border border-gray-300 rounded-lg p-4 bg-white shadow-sm"
             >
               <h4 className="font-medium text-gray-800 mb-3 text-center">
                 {headerName}
