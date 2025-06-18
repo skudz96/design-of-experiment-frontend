@@ -218,9 +218,7 @@ export default function Table({
           Customize Level Names by Column
         </h3>
         {/* Grid layout that creates columns for each factor */}
-        <div
-          className="grid gap-6 w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-        >
+        <div className="grid gap-6 w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {headerNames.map((headerName, columnIndex) => (
             // Creates a section for each column/factor
             <div
@@ -235,7 +233,10 @@ export default function Table({
                 {columnLevelMapping[columnIndex] &&
                   Object.entries(columnLevelMapping[columnIndex]).map(
                     ([level, name]) => (
-                      <div key={level} className="flex items-center space-x-2">
+                      <div
+                        key={level}
+                        className="flex items-center space-x-2 w-full"
+                      >
                         <label
                           htmlFor={`level-${columnIndex}-${level}`}
                           className="text-sm font-medium text-gray-600 w-16 flex-shrink-0"
@@ -254,7 +255,7 @@ export default function Table({
                               e.target.value
                             )
                           }
-                          className="flex-1 px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                          className="w-full flex-1 min-w-0 px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
                           placeholder={`Name for level ${level}`}
                         />
                       </div>
