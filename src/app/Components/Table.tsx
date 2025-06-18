@@ -51,34 +51,39 @@ export default function Table({
   useEffect(() => {
     if (!matrix || matrix.length === 0) return;
 
-    const newMapping: { [columnIndex: number]: { [level: number]: string } } =
-      {};
+    // Use functional update to avoid needing columnLevelMapping in dependencies
+    setColumnLevelMapping((prevColumnMapping) => {
+      const newMapping: { [columnIndex: number]: { [level: number]: string } } =
+        {};
 
-    // Initialize mapping for each column in the matrix
-    matrix[0].forEach((_, columnIndex) => {
-      newMapping[columnIndex] = {};
+      // Initialize mapping for each column in the matrix
+      matrix[0].forEach((_, columnIndex) => {
+        newMapping[columnIndex] = {};
 
-      // Get unique levels for this specific column by checking all rows
-      const uniqueLevels = [...new Set(matrix.map((row) => row[columnIndex]))];
+        // Get unique levels for this specific column by checking all rows
+        const uniqueLevels = [
+          ...new Set(matrix.map((row) => row[columnIndex])),
+        ];
 
-      // Create mapping for each unique level in this column
-      uniqueLevels.forEach((level) => {
-        // Preserve existing column-specific mapping if available
-        if (
-          columnLevelMapping[columnIndex] &&
-          columnLevelMapping[columnIndex][level]
-        ) {
-          newMapping[columnIndex][level] =
-            columnLevelMapping[columnIndex][level];
-        } else {
-          // Fall back to global levelMapping or default
-          newMapping[columnIndex][level] =
-            levelMapping[level] || level.toString();
-        }
+        // Create mapping for each unique level in this column
+        uniqueLevels.forEach((level) => {
+          // Preserve existing column-specific mapping if available
+          if (
+            prevColumnMapping[columnIndex] &&
+            prevColumnMapping[columnIndex][level]
+          ) {
+            newMapping[columnIndex][level] =
+              prevColumnMapping[columnIndex][level];
+          } else {
+            // Fall back to global levelMapping or default
+            newMapping[columnIndex][level] =
+              levelMapping[level] || level.toString();
+          }
+        });
       });
-    });
 
-    setColumnLevelMapping(newMapping);
+      return newMapping;
+    });
   }, [matrix, levelMapping]);
 
   if (!matrix || matrix.length === 0) {
