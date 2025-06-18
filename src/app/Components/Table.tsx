@@ -133,6 +133,7 @@ export default function Table({
 
   // function to randomize the order of matrix rows
   // Creates a copy of the matrix and shuffles the rows using Fisher-Yates algorithm
+  // Experiment numbers will reflect the new position after shuffling
   function randomizeRowOrder() {
     const shuffledMatrix = [...displayMatrix];
 
@@ -165,7 +166,7 @@ export default function Table({
       ...headerNames, // Use the editable header names
     ];
     const rows = displayMatrix.map((row, rowIndex) => [
-      rowIndex + 1,
+      rowIndex + 1, // Use current position as experiment number
       ...row.map(
         (cell, columnIndex) => columnLevelMapping[columnIndex]?.[cell] || cell
       ),
@@ -219,13 +220,14 @@ export default function Table({
             {displayMatrix.map(
               // Iterates over each row (array) in the display matrix (which may be shuffled)
               (row, rowIndex) => (
-                // Creates a table row for each array
+                // Creates a table row for each array, experiment numbers reflect current position
                 <tr
                   key={rowIndex}
                   className={rowIndex % 2 === 0 ? "bg-slate-50" : "bg-white"}
                 >
                   <td className="p-2 border border-gray-300 text-center font-bold">
                     {rowIndex + 1}
+                    {/* Displays the current position as experiment number (1, 2, 3...) */}
                   </td>
                   {row.map((cell, cellIndex) => (
                     // Iterates over the contents of each row (array) in the matrix
