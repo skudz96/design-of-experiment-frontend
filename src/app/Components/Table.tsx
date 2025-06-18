@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 interface TableProps {
   matrix: number[][];
   levelMapping: { [key: number]: string };
@@ -9,6 +11,18 @@ export default function Table({
   levelMapping,
   setLevelMapping,
 }: TableProps) {
+  // Add state for header names
+  const [headerNames, setHeaderNames] = useState<string[]>(
+    () => matrix[0]?.map((_, i) => `Factor ${i + 1}`) || []
+  );
+
+  // Update header names when matrix changes
+  useEffect(() => {
+    if (matrix[0]) {
+      setHeaderNames(matrix[0].map((_, i) => `Factor ${i + 1}`));
+    }
+  }, [matrix]);
+
   if (!matrix || matrix.length === 0) {
     return null;
   }
@@ -18,13 +32,20 @@ export default function Table({
     setLevelMapping({ ...levelMapping, [level]: name });
   }
 
+  // function to update header names
+  function handleHeaderNameChange(index: number, name: string) {
+    const newHeaderNames = [...headerNames];
+    newHeaderNames[index] = name;
+    setHeaderNames(newHeaderNames);
+  }
+
   // function that converts the matrix data into csv format
   // creates the CSV by joining the headers and rows with commas and newlines
   // creates blob object from the CSV content and a temporary link element to trigger the download
   function exportToCSV() {
     const headers = [
       "Experiment",
-      ...matrix[0].map((_, i) => `Factor ${i + 1}`),
+      ...headerNames, // Use the editable header names
     ];
     const rows = matrix.map((row, rowIndex) => [
       rowIndex + 1,
@@ -55,20 +76,17 @@ export default function Table({
           <tr>
             {/* First column header for experiment numbering */}
             <th className="py-2 px-4 border border-gray-300">Experiment</th>
-            {matrix[0].map(
-              // Maps starting from the first row in the matrix
-              (_, i) => (
-                // Iterates over its elements, ignores the values
-                <th
-                  key={i}
-                  className="py-2 px-4 border border-gray-300"
-                  contentEditable={true}
-                >
-                  Factor {i + 1}
-                  {/* Creates as many column heads as there are elements (factors) in the matrix */}
-                </th>
-              )
-            )}
+            {headerNames.map((headerName, i) => (
+              <th key={i} className="py-2 px-4 border border-gray-300">
+                <input
+                  type="text"
+                  value={headerName}
+                  onChange={(e) => handleHeaderNameChange(i, e.target.value)}
+                  className="w-full bg-transparent border-none outline-none text-center font-semibold"
+                  placeholder={`Factor ${i + 1}`}
+                />
+              </th>
+            ))}
           </tr>
         </thead>
         {/* Table header end */}
@@ -102,7 +120,7 @@ export default function Table({
       </table>
 
       <form className="mt-4">
-        <div className="flex flex-wrap  gap-4">
+        <div className="flex flex-wrap gap-4">
           {/* form element that generates input fields based on number of levels */}
           {Object.keys(levelMapping).map((level) => (
             // Returns an array of the keys of the levelMapping object
