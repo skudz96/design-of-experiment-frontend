@@ -2,10 +2,8 @@ import React, { useState, useEffect } from "react";
 
 interface TableProps {
   matrix: number[][];
-  levelMapping: { [columnIndex: number]: { [level: number]: string } };
-  setLevelMapping: (mapping: {
-    [columnIndex: number]: { [level: number]: string };
-  }) => void;
+  levelMapping: { [key: number]: string };
+  setLevelMapping: (mapping: { [key: number]: string }) => void;
 }
 
 export default function Table({
@@ -18,6 +16,30 @@ export default function Table({
     () => matrix[0]?.map((_, i) => `Factor ${i + 1}`) || []
   );
 
+  // Internal state for column-specific level mapping
+  // This converts the flat levelMapping to column-specific format
+  const [columnLevelMapping, setColumnLevelMapping] = useState<{
+    [columnIndex: number]: { [level: number]: string };
+  }>(() => {
+    if (!matrix || matrix.length === 0) return {};
+
+    const mapping: { [columnIndex: number]: { [level: number]: string } } = {};
+
+    // Initialize mapping for each column
+    matrix[0].forEach((_, columnIndex) => {
+      mapping[columnIndex] = {};
+
+      // Get unique levels for this column
+      const uniqueLevels = [...new Set(matrix.map((row) => row[columnIndex]))];
+      uniqueLevels.forEach((level) => {
+        // Use existing levelMapping if available, otherwise use default
+        mapping[columnIndex][level] = levelMapping[level] || level.toString();
+      });
+    });
+
+    return mapping;
+  });
+
   // Update header names when matrix changes
   useEffect(() => {
     if (matrix[0]) {
@@ -25,49 +47,39 @@ export default function Table({
     }
   }, [matrix]);
 
-  // Initialize level mapping if empty or matrix structure changes
+  // Update column mappings when matrix or levelMapping changes
   useEffect(() => {
     if (!matrix || matrix.length === 0) return;
 
-    // Check if levelMapping is empty or doesn't match current matrix structure
-    const needsInitialization = matrix[0].some(
-      (_, columnIndex) =>
-        !levelMapping[columnIndex] ||
-        typeof levelMapping[columnIndex] !== "object"
-    );
+    const newMapping: { [columnIndex: number]: { [level: number]: string } } =
+      {};
 
-    if (needsInitialization) {
-      const newMapping: { [columnIndex: number]: { [level: number]: string } } =
-        {};
+    // Initialize mapping for each column in the matrix
+    matrix[0].forEach((_, columnIndex) => {
+      newMapping[columnIndex] = {};
 
-      // Initialize mapping for each column in the matrix
-      matrix[0].forEach((_, columnIndex) => {
-        // Ensure each column has its own mapping object
-        newMapping[columnIndex] = {};
+      // Get unique levels for this specific column by checking all rows
+      const uniqueLevels = [...new Set(matrix.map((row) => row[columnIndex]))];
 
-        // Get unique levels for this specific column by checking all rows
-        const uniqueLevels = [
-          ...new Set(matrix.map((row) => row[columnIndex])),
-        ];
-
-        // Create default mapping for each unique level in this column
-        uniqueLevels.forEach((level) => {
-          // If existing mapping exists and is valid, preserve it, otherwise use default
-          if (
-            levelMapping[columnIndex] &&
-            typeof levelMapping[columnIndex] === "object" &&
-            levelMapping[columnIndex][level]
-          ) {
-            newMapping[columnIndex][level] = levelMapping[columnIndex][level];
-          } else {
-            newMapping[columnIndex][level] = level.toString();
-          }
-        });
+      // Create mapping for each unique level in this column
+      uniqueLevels.forEach((level) => {
+        // Preserve existing column-specific mapping if available
+        if (
+          columnLevelMapping[columnIndex] &&
+          columnLevelMapping[columnIndex][level]
+        ) {
+          newMapping[columnIndex][level] =
+            columnLevelMapping[columnIndex][level];
+        } else {
+          // Fall back to global levelMapping or default
+          newMapping[columnIndex][level] =
+            levelMapping[level] || level.toString();
+        }
       });
+    });
 
-      setLevelMapping(newMapping);
-    }
-  }, [matrix, levelMapping, setLevelMapping]);
+    setColumnLevelMapping(newMapping);
+  }, [matrix, levelMapping]);
 
   if (!matrix || matrix.length === 0) {
     return null;
@@ -86,23 +98,36 @@ export default function Table({
     level: number,
     name: string
   ) {
-    const newMapping = {
-      ...levelMapping,
+    // Update internal column-specific mapping
+    setColumnLevelMapping((prev) => ({
+      ...prev,
       [columnIndex]: {
-        ...levelMapping[columnIndex],
+        ...prev[columnIndex],
         [level]: name,
       },
-    };
-    setLevelMapping(newMapping);
+    }));
+
+    // Also update the parent's flat levelMapping for backward compatibility
+    // This creates a unique key by combining column and level
+    const flatKey = columnIndex * 1000 + level; // Simple way to create unique keys
+    setLevelMapping({
+      ...levelMapping,
+      [flatKey]: name,
+    });
   }
 
   // function that converts the matrix data into csv format
+  // creates the CSV by joining the headers and rows with commas and newlines
+  // creates blob object from the CSV content and a temporary link element to trigger the download
   function exportToCSV() {
-    const headers = ["Experiment", ...headerNames];
+    const headers = [
+      "Experiment",
+      ...headerNames, // Use the editable header names
+    ];
     const rows = matrix.map((row, rowIndex) => [
       rowIndex + 1,
       ...row.map(
-        (cell, columnIndex) => levelMapping[columnIndex]?.[cell] || cell
+        (cell, columnIndex) => columnLevelMapping[columnIndex]?.[cell] || cell
       ),
     ]);
 
@@ -126,9 +151,12 @@ export default function Table({
     <div className="flex flex-col items-center justify-center">
       <table className="min-w-full bg-white border border-gray-300">
         <thead>
+          {/* Table header start */}
           <tr>
+            {/* First column header for experiment numbering */}
             <th className="py-2 px-4 border border-gray-300">Experiment</th>
             {headerNames.map((headerName, i) => (
+              // Maps over header names to create editable column headers
               <th key={i} className="py-2 px-4 border border-gray-300">
                 <input
                   type="text"
@@ -137,27 +165,40 @@ export default function Table({
                   className="w-full bg-transparent border-none outline-none text-center font-semibold"
                   placeholder={`Factor ${i + 1}`}
                 />
+                {/* Creates editable header inputs for each factor */}
               </th>
             ))}
           </tr>
         </thead>
+        {/* Table header end */}
         <tbody>
-          {matrix.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              <td className="py-2 px-4 border border-gray-300 text-center font-bold">
-                {rowIndex + 1}
-              </td>
-              {row.map((cell, cellIndex) => (
-                <td
-                  key={cellIndex}
-                  className="py-2 px-4 border border-gray-300 text-center"
-                >
-                  {levelMapping[cellIndex]?.[cell] || cell}
+          {/* Table body start */}
+          {matrix.map(
+            // Iterates over each row (array) in the matrix
+            (row, rowIndex) => (
+              // Creates a table row for each array
+              <tr key={rowIndex}>
+                <td className="py-2 px-4 border border-gray-300 text-center font-bold">
+                  {rowIndex + 1}
                 </td>
-              ))}
-            </tr>
-          ))}
+                {row.map((cell, cellIndex) => (
+                  // Iterates over the contents of each row (array) in the matrix
+                  // Creates a data cell for each one
+                  // populates the cell with the content
+                  <td
+                    key={cellIndex}
+                    className="py-2 px-4 border border-gray-300 text-center"
+                  >
+                    {columnLevelMapping[cellIndex]?.[cell] || cell}
+                    {/* Uses column-specific levelMapping to display custom names for levels */}
+                    {/* If no custom name exists for this column and level, shows the original cell value */}
+                  </td>
+                ))}
+              </tr>
+            )
+          )}
         </tbody>
+        {/* Table body end */}
       </table>
 
       <div className="mt-6 w-full max-w-6xl">
@@ -180,8 +221,8 @@ export default function Table({
               </h4>
               <div className="space-y-2">
                 {/* Maps over the levels in each column to create input fields */}
-                {levelMapping[columnIndex] &&
-                  Object.entries(levelMapping[columnIndex]).map(
+                {columnLevelMapping[columnIndex] &&
+                  Object.entries(columnLevelMapping[columnIndex]).map(
                     ([level, name]) => (
                       <div key={level} className="flex items-center space-x-2">
                         <label
@@ -214,6 +255,7 @@ export default function Table({
         </div>
       </div>
 
+      {/* Button that executes csv exports function on click */}
       <button
         onClick={exportToCSV}
         className="mt-6 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-300"
