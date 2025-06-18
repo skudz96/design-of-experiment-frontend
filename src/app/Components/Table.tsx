@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface TableProps {
   matrix: number[][];
@@ -16,6 +16,30 @@ export default function Table({
     () => matrix[0]?.map((_, i) => `Factor ${i + 1}`) || []
   );
 
+  // Internal state for column-specific level mapping
+  // This converts the flat levelMapping to column-specific format
+  const [columnLevelMapping, setColumnLevelMapping] = useState<{
+    [columnIndex: number]: { [level: number]: string };
+  }>(() => {
+    if (!matrix || matrix.length === 0) return {};
+
+    const mapping: { [columnIndex: number]: { [level: number]: string } } = {};
+
+    // Initialize mapping for each column
+    matrix[0].forEach((_, columnIndex) => {
+      mapping[columnIndex] = {};
+
+      // Get unique levels for this column
+      const uniqueLevels = [...new Set(matrix.map((row) => row[columnIndex]))];
+      uniqueLevels.forEach((level) => {
+        // Use existing levelMapping if available, otherwise use default
+        mapping[columnIndex][level] = levelMapping[level] || level.toString();
+      });
+    });
+
+    return mapping;
+  });
+
   // Update header names when matrix changes
   useEffect(() => {
     if (matrix[0]) {
@@ -23,13 +47,42 @@ export default function Table({
     }
   }, [matrix]);
 
+  // Update column mappings when matrix or levelMapping changes
+  useEffect(() => {
+    if (!matrix || matrix.length === 0) return;
+
+    const newMapping: { [columnIndex: number]: { [level: number]: string } } =
+      {};
+
+    // Initialize mapping for each column in the matrix
+    matrix[0].forEach((_, columnIndex) => {
+      newMapping[columnIndex] = {};
+
+      // Get unique levels for this specific column by checking all rows
+      const uniqueLevels = [...new Set(matrix.map((row) => row[columnIndex]))];
+
+      // Create mapping for each unique level in this column
+      uniqueLevels.forEach((level) => {
+        // Preserve existing column-specific mapping if available
+        if (
+          columnLevelMapping[columnIndex] &&
+          columnLevelMapping[columnIndex][level]
+        ) {
+          newMapping[columnIndex][level] =
+            columnLevelMapping[columnIndex][level];
+        } else {
+          // Fall back to global levelMapping or default
+          newMapping[columnIndex][level] =
+            levelMapping[level] || level.toString();
+        }
+      });
+    });
+
+    setColumnLevelMapping(newMapping);
+  }, [matrix, levelMapping]);
+
   if (!matrix || matrix.length === 0) {
     return null;
-  }
-
-  // function to update the levelMapping state, renaming the levels
-  function handleLevelNameChange(level: number, name: string) {
-    setLevelMapping({ ...levelMapping, [level]: name });
   }
 
   // function to update header names
@@ -37,6 +90,30 @@ export default function Table({
     const newHeaderNames = [...headerNames];
     newHeaderNames[index] = name;
     setHeaderNames(newHeaderNames);
+  }
+
+  // function to update the levelMapping state for specific column and level
+  function handleColumnLevelNameChange(
+    columnIndex: number,
+    level: number,
+    name: string
+  ) {
+    // Update internal column-specific mapping
+    setColumnLevelMapping((prev) => ({
+      ...prev,
+      [columnIndex]: {
+        ...prev[columnIndex],
+        [level]: name,
+      },
+    }));
+
+    // Also update the parent's flat levelMapping for backward compatibility
+    // This creates a unique key by combining column and level
+    const flatKey = columnIndex * 1000 + level; // Simple way to create unique keys
+    setLevelMapping({
+      ...levelMapping,
+      [flatKey]: name,
+    });
   }
 
   // function that converts the matrix data into csv format
@@ -49,7 +126,9 @@ export default function Table({
     ];
     const rows = matrix.map((row, rowIndex) => [
       rowIndex + 1,
-      ...row.map((cell) => levelMapping[cell] || cell),
+      ...row.map(
+        (cell, columnIndex) => columnLevelMapping[columnIndex]?.[cell] || cell
+      ),
     ]);
 
     const csvContent = [
@@ -77,6 +156,7 @@ export default function Table({
             {/* First column header for experiment numbering */}
             <th className="py-2 px-4 border border-gray-300">Experiment</th>
             {headerNames.map((headerName, i) => (
+              // Maps over header names to create editable column headers
               <th key={i} className="py-2 px-4 border border-gray-300">
                 <input
                   type="text"
@@ -85,6 +165,7 @@ export default function Table({
                   className="w-full bg-transparent border-none outline-none text-center font-semibold"
                   placeholder={`Factor ${i + 1}`}
                 />
+                {/* Creates editable header inputs for each factor */}
               </th>
             ))}
           </tr>
@@ -108,8 +189,9 @@ export default function Table({
                     key={cellIndex}
                     className="py-2 px-4 border border-gray-300 text-center"
                   >
-                    {levelMapping[cell] || cell}
-                    {/* If the levelMapping object has a key that matches the cell value, it uses the value of that key as the cell content */}
+                    {columnLevelMapping[cellIndex]?.[cell] || cell}
+                    {/* Uses column-specific levelMapping to display custom names for levels */}
+                    {/* If no custom name exists for this column and level, shows the original cell value */}
                   </td>
                 ))}
               </tr>
@@ -119,41 +201,64 @@ export default function Table({
         {/* Table body end */}
       </table>
 
-      <form className="mt-4">
-        <div className="flex flex-wrap gap-4">
-          {/* form element that generates input fields based on number of levels */}
-          {Object.keys(levelMapping).map((level) => (
-            // Returns an array of the keys of the levelMapping object
-            // each key represents a level in the matrix
-            // maps over each level and creates an input field for it
-            // the input field is pre-populated with the value of the key
-
-            // useEffect hook in page.tsx updates the levelMapping object when the levels array changes
-            <div key={level} className="flex items-center space-x-2">
-              <label
-                htmlFor={`level-${level}`}
-                className="text-sm font-medium text-gray-700"
-              >
-                Level {level}
-              </label>
-              <input
-                id={`level-${level}`}
-                type="text"
-                value={levelMapping[Number(level)]}
-                onChange={(e) =>
-                  handleLevelNameChange(Number(level), e.target.value)
-                }
-                className="w-24 px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
-                placeholder={`Enter name for level ${level}`}
-              />
+      <div className="mt-6 w-full max-w-6xl">
+        <h3 className="text-lg font-semibold mb-4 text-center">
+          Customize Level Names by Column
+        </h3>
+        {/* Grid layout that creates columns for each factor */}
+        <div
+          className="grid gap-6"
+          style={{ gridTemplateColumns: `repeat(${headerNames.length}, 1fr)` }}
+        >
+          {headerNames.map((headerName, columnIndex) => (
+            // Creates a section for each column/factor
+            <div
+              key={columnIndex}
+              className="border border-gray-200 rounded-lg p-4"
+            >
+              <h4 className="font-medium text-gray-800 mb-3 text-center">
+                {headerName}
+              </h4>
+              <div className="space-y-2">
+                {/* Maps over the levels in each column to create input fields */}
+                {columnLevelMapping[columnIndex] &&
+                  Object.entries(columnLevelMapping[columnIndex]).map(
+                    ([level, name]) => (
+                      <div key={level} className="flex items-center space-x-2">
+                        <label
+                          htmlFor={`level-${columnIndex}-${level}`}
+                          className="text-sm font-medium text-gray-600 w-16 flex-shrink-0"
+                        >
+                          Level {level}:
+                        </label>
+                        {/* Input field for customizing level names for this specific column */}
+                        <input
+                          id={`level-${columnIndex}-${level}`}
+                          type="text"
+                          value={name}
+                          onChange={(e) =>
+                            handleColumnLevelNameChange(
+                              columnIndex,
+                              Number(level),
+                              e.target.value
+                            )
+                          }
+                          className="flex-1 px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+                          placeholder={`Name for level ${level}`}
+                        />
+                      </div>
+                    )
+                  )}
+              </div>
             </div>
           ))}
         </div>
-      </form>
+      </div>
+
       {/* Button that executes csv exports function on click */}
       <button
         onClick={exportToCSV}
-        className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-300"
+        className="mt-6 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-300"
       >
         Export to CSV
       </button>
